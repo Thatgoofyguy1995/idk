@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web-Slinger Stickman Game</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Player
+        const player = {
+            x: 400,
+            y: 300,
+            radius: 20,
+            speed: 5,
+            isStickingToWall: false,
+            webPoint: null
+        };
+
+        // Game objects
+        const objects = [
+            { x: 100, y: 100, width: 50, height: 200 },
+            { x: 650, y: 300, width: 50, height: 200 }
+        ];
+
+        // Game loop
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Update game state
+        function update() {
+            if (keys.ArrowLeft && !player.isStickingToWall) player.x -= player.speed;
+            if (keys.ArrowRight && !player.isStickingToWall) player.x += player.speed;
+            if (keys.ArrowUp && !player.isStickingToWall) player.y -= player.speed;
+            if (keys.ArrowDown && !player.isStickingToWall) player.y += player.speed;
+
+            // Wall sticking
+            player.isStickingToWall = false;
+            for (const obj of objects) {
+                if (
+                    player.x + player.radius > obj.x &&
+                    player.x - player.radius < obj.x + obj.width &&
+                    player.y + player.radius > obj.y &&
+                    player.y - player.radius < obj.y + obj.height
+                ) {
+                    player.isStickingToWall = true;
+                    break;
+                }
+            }
+
+            // Web-slinging
+            if (player.webPoint) {
+                const dx = player.webPoint.x - player.x;
+                const dy = player.webPoint.y - player.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance > 10) {
+                    player.x += dx * 0.1;
+                    player.y += dy * 0.1;
+                } else {
+                    player.webPoint = null;
+                }
+            }
+        }
+
+        // Draw game objects
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw player
+            ctx.beginPath();
+            ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
+            ctx.fillStyle = player.isStickingToWall ? 'red' : 'black';
+            ctx.fill();
+
+            // Draw objects
+            ctx.fillStyle = 'gray';
+            for (const obj of objects) {
+                ctx.fillRect(obj.x, obj.y, obj.width, obj.height);
+            }
+
+            // Draw web
+            if (player.webPoint) {
+                ctx.beginPath();
+                ctx.moveTo(player.x, player.y);
+                ctx.lineTo(player.webPoint.x, player.webPoint.y);
+                ctx.strokeStyle = 'gray';
+                ctx.stroke();
+            }
+        }
+
+        // Keyboard input
+        const keys = {};
+        window.addEventListener('keydown', (e) => keys[e.code] = true);
+        window.addEventListener('keyup', (e) => keys[e.code] = false);
+
+        // Mouse input for web-slinging
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            player.webPoint = {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            };
+        });
+
+        // Start the game
+        gameLoop();
+    </script>
+</body>
+</html>
